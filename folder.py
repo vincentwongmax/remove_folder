@@ -14,31 +14,46 @@ class App:
         self.config.read('config.ini')
 
         # 創建用於輸入源文件夾和目標文件夾路徑的Entry控件
-        tk.Label(master, text="Source folder:").grid(row=0, column=0)
-        tk.Label(master, text="Target folder:").grid(row=1, column=0)
+        
+        tk.Label(master, text="按開始-->執行清除資料夾提取子文件").grid(row=0, column=0 ,columnspan=2)
+        tk.Label(master, text="Source folder:").grid(row=1, column=0)
+        tk.Label(master, text="Target folder:").grid(row=2, column=0)
         self.source_folder_entry = tk.Entry(master, width=50)
-        self.source_folder_entry.grid(row=0, column=1)
+        self.source_folder_entry.grid(row=1, column=1)
         self.target_folder_entry = tk.Entry(master, width=50)
-        self.target_folder_entry.grid(row=1, column=1)
+        self.target_folder_entry.grid(row=2, column=1)
 
         self.confirm_var = tk.BooleanVar()
-        self.confirm_checkbox = tk.Checkbutton(self.master, text="完全沒有資料夾", variable=self.confirm_var)
-        self.confirm_checkbox.grid(row=2, column=0)
+        self.confirm_checkbox = tk.Checkbutton(self.master, text="多層清空資料夾", variable=self.confirm_var)
+        self.confirm_checkbox.grid(row=3, column=0, columnspan=1  )
 
+        self.backup_var = tk.BooleanVar()
+        self.backup_checkbox = tk.Checkbutton(self.master, text="備份資料夾", variable=self.backup_var)
+        self.backup_checkbox.grid(row=3, column=1 ,  columnspan=3)
         
         # 從ini文件中讀取源文件夾和目標文件夾的路徑，並顯示在Entry控件中
         self.source_folder_entry.insert(tk.END, self.config.get('Folders', 'source_folder'))
         self.target_folder_entry.insert(tk.END, self.config.get('Folders', 'target_folder'))
 
         # 創建用於開始運行程式碼的按鈕
-        tk.Button(master, text="Start", command=self.move_files).grid(row=2, column=0, columnspan=2)
+        tk.Button(master, text="Start", command=self.move_files).grid(row=4, column=0, columnspan=2)
 
     def move_files(self):
-        print(self.confirm_var.get())
+        print(self.backup_var.get())
         # 從Entry控件中獲取輸入的源文件夾和目標文件夾路徑
         source_folder = self.source_folder_entry.get()
         target_folder = self.target_folder_entry.get()
-
+        
+        if self.backup_var.get():
+            parent_dir = os.path.abspath(os.path.join(source_folder, os.pardir))
+            backup_dirname = os.path.basename(source_folder) + "_備份"
+            while os.path.exists(os.path.join(parent_dir, backup_dirname)):
+                backup_dirname += "_備份"
+            backup_dir = os.path.join(parent_dir, backup_dirname)
+            shutil.copytree(source_folder, backup_dir)
+            self.backup_checkbox.deselect() 
+            messagebox.showinfo('Success', '備份成功')
+    
         if(self.confirm_var.get()):
             if(source_folder != target_folder):
                 messagebox.showerror('Error', '源文件夾和目標文件夾不的路徑不一致，請重新輸入！')
@@ -77,6 +92,7 @@ class App:
         
         if sub_folders:
             if(self.confirm_var.get()):
+                
                 self.move_files()
             else:
                 if messagebox.askyesno('Confirm', '還有文件夾存在，是否要重頭再運行程式碼？'):
@@ -87,6 +103,8 @@ class App:
             messagebox.showinfo('Success', '所有文件已移動成功！')
             self.master.destroy()
 
+        
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
